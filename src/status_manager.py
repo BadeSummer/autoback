@@ -25,25 +25,10 @@ class StatusManager:
         Args:
             filename (str): 状态文件的名称。默认为 'upload_status.json'。
         """
-        self.filename = filename
-        self.status = self.load_status()
         self.lock = threading.Lock()
+        self.filename = filename
+        self.status = self._load_status()
 
-    def load_status(self):
-        """
-        加载状态文件。
-
-        从 JSON 文件中读取状态数据。如果文件不存在，则返回一个空字典。
-
-        Returns:
-            dict: 包含文件状态的字典。
-        """
-        with self.lock:
-            if os.path.exists(self.filename):
-                with open(self.filename, 'r') as file:
-                    return json.load(file)
-            else:
-                return {}
 
     def get_status(self, file_name):
         """
@@ -58,6 +43,7 @@ class StatusManager:
         with self.lock:
             return self.status.get(file_name, 'NOT_EXIST')
 
+
     def add(self, file_name):
         """
         增加文件到状态表
@@ -66,8 +52,12 @@ class StatusManager:
             file_name (str): 增加的文件
         """
         with self.lock:
-            self.set_status(file_name, STATUS_NOT_UPLOADED)
-            self.save_status()
+            if file_name in self.status:
+                raise ValueError(f"文件 '{file_name}' 的状态已经存在。")
+            
+            self._set_status(file_name, STATUS_NOT_UPLOADED)
+            self._save_status()
+
 
     def set_uploaded(self, file_name):
         """
@@ -77,35 +67,48 @@ class StatusManager:
             file_name (str): 需要修改状态的文件
         """
         with self.lock:
-            self.set_status(file_name, STATUS_UPLOADED)
-            self.save_status()
+            if file_name not in self.status:
+                raise ValueError(f"文件 '{file_name}' 的不存在。")
+            
+            self._set_status(file_name, STATUS_UPLOADED)
+            self._save_status()
 
-    def set_status(self, file_name, status):
+
+    def set_uploading(self, file_name):
         """
-        设置指定文件的上传状态，并保存更改。
+        设置文件状态为正在上传
 
         Args:
-            file_name (str): 文件名。
-            status (str): 要设置的状态。
+            file_name (str): 需要修改状态的文件
         """
         with self.lock:
-            self.status[file_name] = status
-            self.save_status()
+            if file_name not in self.status:
+                raise ValueError(f"文件 '{file_name}' 的不存在。")
+            
+            self._set_status(file_name, STATUS_UPLOADING)
+            self._save_status()
 
-    def save_status(self):
+
+    def set_not_uploaded(self, file_name):
         """
-        将当前状态保存到文件。
+        设置文件状态为未上传
 
-        将 status 字典写入到 JSON 文件中。
+        Args:
+            file_name (str): 需要修改状态的文件
         """
         with self.lock:
-            with open(self.filename, 'w') as file:
-                json.dump(self.status, file, indent=4)
+            if file_name not in self.status:
+                raise ValueError(f"文件 '{file_name}' 的不存在。")
+            
+            self._set_status(file_name, STATUS_NOT_UPLOADED)
+            self._save_status()
+
 
     def reload_status(self):
         """ 重新加载状态文件。 """
         with self.lock:
-            self.status = self.load_status()
+            self.status = self._load_status()
+
 
     def remove_status(self, file_name):
         """
@@ -119,4 +122,42 @@ class StatusManager:
         with self.lock:
             if file_name in self.status:
                 del self.status[file_name]
-                self.save_status()
+                self._save_status()
+
+
+    def _set_status(self, file_name, status):
+        """
+        设置指定文件的上传状态，并保存更改。
+
+        Args:
+            file_name (str): 文件名。
+            status (str): 要设置的状态。
+        """
+        self.status[file_name] = status
+        self._save_status()
+
+
+    def _save_status(self):
+        """
+        将当前状态保存到文件。
+
+        将 status 字典写入到 JSON 文件中。
+        """
+        with open(self.filename, 'w') as file:
+            json.dump(self.status, file, indent=4)
+
+
+    def _load_status(self):
+        """
+        加载状态文件。
+
+        从 JSON 文件中读取状态数据。如果文件不存在，则返回一个空字典。
+
+        Returns:
+            dict: 包含文件状态的字典。
+        """
+        if os.path.exists(self.filename):
+            with open(self.filename, 'r') as file:
+                return json.load(file)
+        else:
+            return {}

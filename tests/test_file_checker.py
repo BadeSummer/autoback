@@ -5,10 +5,7 @@ import os
 import time
 import logging
 
-
-# 将 src 目录添加到 sys.path 以便导入 file_checker
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-import file_checker
+import src.file_checker as file_checker
 from queue import Queue
 
 class TestFileChecker(unittest.TestCase):
@@ -27,18 +24,18 @@ class TestFileChecker(unittest.TestCase):
         file_checker.should_continue = True
 
         # 日志输出
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
     @patch('time.sleep', return_value=None)
-    @patch('os.listdir')
+    @patch('utils.get_all_files_in_directory')
     @patch('os.path.isfile')
     @patch('os.path.getmtime')
-    def test_check_for_new_files(self, mock_getmtime, mock_isfile, mock_listdir, mock_sleep):
+    def test_check_for_new_files(self, mock_getmtime, mock_isfile, mock_get_all_files_in_directory, mock_sleep):
         """测试 check_for_new_files 函数是否正确处理新文件"""
 
         # 模拟文件系统
-        mock_listdir.return_value = ['file1.txt', 'file2.txt']
+        mock_get_all_files_in_directory.return_value = ['file1.txt', 'file2.txt']
         mock_isfile.return_value = True
         mock_getmtime.return_value = 10000
 
@@ -71,10 +68,10 @@ class TestFileChecker(unittest.TestCase):
     @patch('time.sleep', return_value=None)
     @patch('os.path.getmtime')
     @patch('os.path.isfile')
-    @patch('os.listdir')
-    def test_files_after_last_check(self, mock_listdir, mock_isfile, mock_getmtime, mock_sleep):
+    @patch('utils.get_all_files_in_directory')
+    def test_files_after_last_check(self, mock_get_all_files_in_directory, mock_isfile, mock_getmtime, mock_sleep):
         # 模拟文件系统
-        mock_listdir.return_value = ['file1.txt', 'file2.txt']
+        mock_get_all_files_in_directory.return_value = ['file1.txt', 'file2.txt']
         mock_isfile.return_value = True
 
         # 模拟状态管理器
