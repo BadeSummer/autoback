@@ -1,6 +1,10 @@
 import os
 import time
 import logging
+
+import sys
+sys.path.append('src')
+
 import utils
 
 

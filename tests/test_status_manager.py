@@ -2,6 +2,7 @@ import unittest
 import tempfile
 import os
 import json
+from queue import Queue
 from src.status_manager import StatusManager, STATUS_NOT_UPLOADED, STATUS_UPLOADED, STATUS_UPLOADING  # 请替换为你的模块名
 
 class TestStatusManager(unittest.TestCase):
@@ -21,7 +22,10 @@ class TestStatusManager(unittest.TestCase):
 
         self.temp_file.close()
 
-        self.manager = StatusManager(self.temp_file.name)
+        # 创建临时空队列
+        self.test_queue = Queue()
+
+        self.manager = StatusManager(self.test_queue, self.temp_file.name)
 
 
     def tearDown(self):
@@ -131,6 +135,35 @@ class TestStatusManager(unittest.TestCase):
 
         self.assertEqual(f1_status, STATUS_UPLOADED)
         self.assertEqual(f2_status, 'NOT_EXIST')
+
+
+    def test_recover_queue(self):
+        '''测试status对queue的同步操作'''
+        
+        # 测试初始化同步
+        task_init = self.test_queue.get(timeout=5)
+        self.test_queue.task_done()
+        self.assertEqual(task_init, 'file1')
+        self.assertTrue(self.test_queue.empty())
+
+        # 新增一个状态，不会影响queue
+        task_new = 'new_task'
+        self.manager.add(task_new)
+        self.assertTrue(self.test_queue.empty())
+
+        '''测试重新加载是否会同步队列的行为，根据需求选择其中一个测试'''
+        
+        '''重新加载不执行 同步队列'''
+        self.manager.reload_status()
+        self.assertTrue(self.test_queue.empty())
+
+        # '''重新加载执行 同步队列'''
+        # self.manager.reload_status()
+        # self.assertFalse(self.test_queue.empty())
+        # task_init = self.test_queue.get(timeout=5)
+        # self.test_queue.task_done()
+        # self.assertEqual(task_init, 'file1')
+        # self.assertTrue(self.test_queue.empty())
 
 
 if __name__ == '__main__':

@@ -6,19 +6,28 @@ import json
 import os
 import threading
 
-class StatusManager:
+class StatusManager():
     """
     StatusManager 用于管理文件的上传状态。
 
     这个类提供了方法来加载、更新、保存和删除特定文件的上传状态。
     状态信息被存储在一个 JSON 文件中。
 
-    Attributes:
-        filename (str): 用于存储文件状态的 JSON 文件的名称。
-        status (dict): 一个字典，包含文件名和其对应的上传状态。
+    Args:
+        queue (Queue) : 文件上传的任务队列
+        filename (str): 状态文件的名称。默认为 'upload_status.json'
+
+    Methods:
+        get_status(file_name) : 获取指定文件的上传状态
+        add(file_name) : 增加文件到状态表
+        set_uploaded(file_name) : 设置文件状态为 已经上传
+        set_uploading(file_name) : 设置文件状态为 正在上传
+        set_not_uploaded(file_name) : 设置文件状态为 未上传
+        reload_status() : 重新加载状态文件
+        remove_status(file_name) : 从状态中删除指定文件的记录
     """
 
-    def __init__(self, filename='upload_status.json'):
+    def __init__(self, queue, filename='upload_status.json'):
         """
         初始化 StatusManager 类的新实例。
 
@@ -27,7 +36,12 @@ class StatusManager:
         """
         self.lock = threading.Lock()
         self.filename = filename
+        self.queue = queue
         self.status = self._load_status()
+        
+        # 初始化加载状态后同步到任务队列
+        self._sync_queue()
+
 
 
     def get_status(self, file_name):
@@ -105,9 +119,10 @@ class StatusManager:
 
 
     def reload_status(self):
-        """ 重新加载状态文件。 """
+        """ 重新加载状态文件 """
         with self.lock:
             self.status = self._load_status()
+            # self._sync_queue()
 
 
     def remove_status(self, file_name):
@@ -123,6 +138,24 @@ class StatusManager:
             if file_name in self.status:
                 del self.status[file_name]
                 self._save_status()
+
+
+    def _sync_queue(self):
+        '''状态为未上传的文件都提交到任务列表，会覆盖原来的任务！'''
+        with self.lock:  # 使用互斥锁确保线程安全
+
+            # 通知其他线程这边即将要开始清空：
+            self.queue.put(None)
+
+            # 清空当前队列
+            while not self.queue.empty():
+                self.queue.get()
+                self.queue.task_done()
+
+            # 遍历状态，找到所有“未上传”的文件
+            for filename, file_status in self.status.items():
+                if file_status == STATUS_NOT_UPLOADED:
+                    self.queue.put(filename)
 
 
     def _set_status(self, file_name, status):
