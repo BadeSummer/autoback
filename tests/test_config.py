@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 from unittest.mock import patch
-from src.config import Config  # 请替换为你的模块名
+from config import Config  # 请替换为你的模块名
 
 class TestConfig(unittest.TestCase):
 

@@ -27,9 +27,9 @@ def oauthtoken_authorizationcode():
     with openapi_client.ApiClient() as api_client:
         # Create an instance of the API class
         api_instance = auth_api.AuthApi(api_client)
-        code = "3ce3370c960ce929306c419d32f92df1" # str | 
-        client_id = "R2Ai3Qcsq2IYP2EXC3A8lmpkQ22iujVh" # str | 
-        client_secret = "KMbyNtHpPkPq7KGGGKrQqunHRi2LMYjU" # str | 
+        code = "542d440dc5de45587c902cd07e0ff9cb" # str | 
+        client_id = "H794OU88Q5KXH89ahoPGVCFNMxVBb1Sb" # str | 
+        client_secret = "pWjzs8MIBw2fxutAXsxVpN0Pxa0OqRT6" # str | 
         redirect_uri = "oob" # str | 
 
         # example passing only required values which don't have defaults set
@@ -69,7 +69,7 @@ def oauthtoken_devicecode():
     with openapi_client.ApiClient() as api_client:
         # Create an instance of the API class
         api_instance = auth_api.AuthApi(api_client)
-        client_id = "R2Ai3Qcsq2IYP2EXC3A8lmpkQ22iujVh" # str | 
+        client_id = "H794OU88Q5KXH89ahoPGVCFNMxVBb1Sb" # str | 
         scope = "basic,netdisk" # str | 
 
         # example passing only required values which don't have defaults set
@@ -89,8 +89,8 @@ def oauthtoken_devicetoken():
         # Create an instance of the API class
         api_instance = auth_api.AuthApi(api_client)
         code = "1dc8cf189c863f094d25843dbbd3f633" # str | 
-        client_id = "R2Ai3Qcsq2IYP2EXC3A8lmpkQ22iujVh" # str | 
-        client_secret = "KMbyNtHpPkPq7KGGGKrQqunHRi2LMYjU" # str |
+        client_id = "H794OU88Q5KXH89ahoPGVCFNMxVBb1Sb" # str | 
+        client_secret = "pWjzs8MIBw2fxutAXsxVpN0Pxa0OqRT6" # str |
 
         # example passing only required values which don't have defaults set
         try:

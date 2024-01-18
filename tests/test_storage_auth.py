@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch, Mock, MagicMock
 import tempfile
 from src.storage_auth import BaiduAuth
-from src.config import Config  # 替换为你的模块名
+from config import Config  # 替换为你的模块名
 import logging
 
 

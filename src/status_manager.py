@@ -5,6 +5,7 @@ STATUS_UPLOADING = '正在上传'
 import json
 import os
 import threading
+import logging
 
 class StatusManager():
     """
@@ -34,12 +35,14 @@ class StatusManager():
         Args:
             filename (str): 状态文件的名称。默认为 'upload_status.json'。
         """
+        logging.debug(f'正在初始化状态控制器')
         self.lock = threading.Lock()
         self.filename = filename
         self.queue = queue
         self.status = self._load_status()
         
         # 初始化加载状态后同步到任务队列
+        logging.debug(f'同步未上传状态到队列中')
         self._sync_queue()
 
 
@@ -154,7 +157,7 @@ class StatusManager():
 
             # 遍历状态，找到所有“未上传”的文件
             for filename, file_status in self.status.items():
-                if file_status == STATUS_NOT_UPLOADED:
+                if file_status == STATUS_NOT_UPLOADED or file_status == STATUS_UPLOADING:
                     self.queue.put(filename)
 
 
@@ -176,8 +179,8 @@ class StatusManager():
 
         将 status 字典写入到 JSON 文件中。
         """
-        with open(self.filename, 'w') as file:
-            json.dump(self.status, file, indent=4)
+        with open(self.filename, 'w', encoding='utf-8') as file:
+            json.dump(self.status, file, indent=4, ensure_ascii=False)
 
 
     def _load_status(self):

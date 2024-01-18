@@ -24,6 +24,7 @@ class Config:
         section = 'BaiduCloud'
         with self.lock:
             return {
+                'app_name': self.config.get(section, 'AppName', fallback=''),
                 'app_id': self.config.get(section, 'AppID', fallback=''),
                 'app_key': self.config.get(section, 'AppKey', fallback=''),
                 'secret_key': self.config.get(section, 'SecretKey', fallback=''),

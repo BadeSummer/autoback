@@ -22,7 +22,7 @@ def user_quota():
     with openapi_client.ApiClient() as api_client:
         # Create an instance of the API class
         api_instance = userinfo_api.UserinfoApi(api_client)
-        access_token = "123.56c5d1f8eedf1f9404c547282c5dbcf4.YmmjpAlsjUFbPly3mJizVYqdfGDLsBaY5pyg3qL.a9IIIQ" # str | 
+        access_token = "121.853f91f14541f053b953c73d8c82411f.YCyzsg2LW4nObIsWaH9pJ3UviHD6aAJPO1r5Ge-.-IXtJA" # str | 
         checkexpire = 1 # int |  (optional)
         checkfree = 1 # int |  (optional)
 
@@ -43,7 +43,7 @@ def user_info():
     with openapi_client.ApiClient() as api_client:
         # Create an instance of the API class
         api_instance = userinfo_api.UserinfoApi(api_client)
-        access_token = "123.56c5d1f8eedf1f9404c547282c5dbcf4.YmmjpAlsjUFbPly3mJizVYqdfGDLsBaY5pyg3qL.a9IIIQ" # str | 
+        access_token = "121.853f91f14541f053b953c73d8c82411f.YCyzsg2LW4nObIsWaH9pJ3UviHD6aAJPO1r5Ge-.-IXtJA" # str | 
 
         # example passing only required values which don't have defaults set
         try:
