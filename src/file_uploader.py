@@ -105,34 +105,37 @@ class BaiduCloudUploader(BaseUploader):
         # 并发上传分片 (用线程池实现，最大线程为5，暂时不可通过配置文件调节)
         logging.debug(f'分片上传 {self.file.file_path} ')
         retries = 20  # 所有分片共享重试次数
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_chunk = {executor.submit(self._api_chunk_upload, access_token, chunk, uploadid): chunk for chunk in self.file.chunks}
-            for future in concurrent.futures.as_completed(future_to_chunk):
-                chunk = future_to_chunk[future]
-                try:
-                    success = future.result()
-                    if success:
-                        with lock:
-                            completed_chunks += 1
-                            progress = (completed_chunks / total_chunks) * 100
-                            print(f"Progress: {progress:.2f}%")
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                future_to_chunk = {executor.submit(self._api_chunk_upload, access_token, chunk, uploadid): chunk for chunk in self.file.chunks}
+                for future in concurrent.futures.as_completed(future_to_chunk):
+                    chunk = future_to_chunk[future]
+                    try:
+                        success = future.result()
+                        if success:
+                            with lock:
+                                completed_chunks += 1
+                                progress = (completed_chunks / total_chunks) * 100
+                                print(f"Progress: {progress:.2f}%")
 
-                    elif retries > 0:
-                        # 重试逻辑
-                        print(f"Retrying {chunk}...")
-                        executor.submit(self._api_chunk_upload, access_token, chunk, uploadid)
-                        retries -= 1
+                        elif retries > 0:
+                            # 重试逻辑
+                            print(f"Retrying {chunk}...")
+                            executor.submit(self._api_chunk_upload, access_token, chunk, uploadid)
+                            retries -= 1
 
-                    else:
-                        raise Exception(f'{ retries }次重试后，分片上传失败')
+                        else:
+                            raise Exception(f'{ retries }次重试后，分片上传失败')
 
-                except Exception as e:
-                    print(f"Error with {chunk.chunk_path}: {e}")
-                    return False
-                
-                if not self.uploading:
-                    print(f"本次上传被停止")
-                    return False
+                    except Exception as e:
+                        print(f"Error with {chunk.chunk_path}: {e}")
+                        return False
+                    
+                    if not self.uploading:
+                        print(f"本次上传被停止")
+                        return False
+        finally:
+            self.file.remove_chunks()
                 
         # 创建文件
         if self._api_creatfile(access_token, self.file, self.file.block_list, uploadid): 

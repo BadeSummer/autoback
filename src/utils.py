@@ -10,10 +10,30 @@ def get_all_files_in_directory(directory):
     all_files = []
     for dirpath, dirnames, filenames in os.walk(directory):
         for filename in filenames:
+
+            # 忽略.DS文件
+            if filename.startswith('.DS'):
+                continue
+
+            # 忽略缓存的分片文件
+            if '_chunk_' in filename:
+                continue
+
             # 拼接完整的文件路径
             full_path = os.path.join(dirpath, filename)
+
             all_files.append(full_path)
     return all_files
+
+
+def remove_all_chunks(directory):
+    for dirpath, dirnames, filenames in os.walk(directory):
+        for filename in filenames:
+            # 拼接完整的文件路径
+            full_path = os.path.join(dirpath, filename)
+            
+            if '_chunk_' in full_path:
+                os.remove(full_path)
 
 
 def cal_file_md5(filename):
@@ -61,7 +81,14 @@ class File:
         for chunk in self.chunks:
             self.block_list.append(chunk.chunk_md5)
         self.block_list = str(self.block_list).replace("'",'"')
-            
+
+
+    def remove_chunks(self):
+        '''删除本地的chunks文件'''
+        for chunk in self.chunks:
+            os.remove(chunk.chunk_path)
+            logging.debug(f'清理缓存{chunk.chunk_path}')
+
     
 class FileChunk:
     '''
