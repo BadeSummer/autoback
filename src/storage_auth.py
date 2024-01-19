@@ -1,10 +1,28 @@
+import sys
+import os
+import re
+import json
+
+# 获取 project 目录的路径
+project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 将 external 目录添加到 sys.path
+external_path = os.path.join(project_path, 'external/baidusdk')
+src_path = os.path.join(project_path, 'src')
+sys.path.append(external_path)
+
+# 百度网盘SDK
+from openapi_client.api import auth_api
+import openapi_client
+
+
 import requests
 from urllib.parse import urlencode
 import webbrowser
 import time
 import logging
 
-
+MAX_REDO = 5
 class BaiduAuth:
     def __init__(self, cg):
         self._update_save = cg.update_save
@@ -58,7 +76,12 @@ class BaiduAuth:
 
         
 
-    def _get_authorization_code(self):
+    def _get_device_code(
+            self,
+            client_id,
+            scope="basic,netdisk",
+            redo=[]
+            ):
         '''
         Device_code授权方案的第一步，获取设备码、用户码。
 
@@ -67,26 +90,32 @@ class BaiduAuth:
             qrcode_url (str) : 授权二维码的url
             interval (int) : 轮询间隔（秒）
         '''
-        # 设置请求参数
-        params = {
-            'response_type': 'device_code',
-            'client_id': self.app_key,
-            'scope': 'basic,netdisk',
-        }
-        api_url = 'https://openapi.baidu.com/oauth/2.0/device/code?'
+        with openapi_client.ApiClient() as api_client:
+            # Create an instance of the API class
+            api_instance = auth_api.AuthApi(api_client)
+            # 设置请求参数
+            client_id = client_id
 
-        # 发送 GET 请求
-        response = requests.get(api_url, params=params)
+            try:
+                api_response = api_instance.oauth_token_device_code(client_id, scope)
+                self._check_exception(api_response)
 
-        if response.status_code == 200:
-            data = response.json()
-            device_code = data.get('device_code')
-            qrcode_url = data.get('qrcode_url')
-            interval = data.get('interval')
-            return device_code, qrcode_url, interval
-        else:
-            print("请求失败，状态码：", response.status_code)
-            return None, None, None
+                device_code = api_response.get('device_code')
+                qrcode_url = api_response.get('qrcode_url')
+                interval = api_response.get('interval')
+
+                return device_code, qrcode_url, interval
+            
+            except openapi_client.ApiException as e:
+                if self._check_exception(e) and len(redo)<MAX_REDO:
+                    # 如果可以自己处理
+                    self._get_device_code(client_id)
+                else:
+                    # 无法自己处理
+                    raise Exception("Exception when calling AuthApi->oauth_token_device_code: %s\n" % e)
+
+            finally:
+                    redo.clear()        
         
 
     def _show_qrcode(self, qrcode_url):
@@ -95,7 +124,13 @@ class BaiduAuth:
 
 
 
-    def _ask_access_token(self, device_code, interval):
+    def _ask_device_token(self,
+                         device_code,
+                         client_id,
+                         client_secret,
+                         interval,
+                         redo=[]
+                         ):
         '''
         Device_code授权方案的第二步，轮询10次获取Access Token。
         获取后更新到`self.access_token`
@@ -105,71 +140,80 @@ class BaiduAuth:
             interval (int): 第一步中获取的最小轮询间隔（秒） 
         '''
         logging.debug(f'开始轮询获取Access Token')
-        
-        # 设置请求参数
-        params = {
-            'code': device_code,
-            'client_id': self.app_key,
-            'client_secret': self.secret_key,
-        }
 
-        api_url = 'https://openapi.baidu.com/oauth/2.0/token?grant_type=device_token&'
-        headers = {
-        'User-Agent': 'pan.baidu.com'
-        }
+        with openapi_client.ApiClient() as api_client:
+            # Create an instance of the API class
+            api_instance = auth_api.AuthApi(api_client)
+            # 设置请求参数
+            code = device_code
+            client_id = client_id
+            client_secret = client_secret
+            interval = interval
 
-        loop_count = 0
-        while loop_count<10 :
-            # 发送 GET 请求
-            response = requests.get(api_url, params=params, headers=headers)
-            data = response.json()
-            logging.debug(f'第 { loop_count } 次轮询响应：\n{ data }')
-            
-            if 'access_token' in data:
-                self.access_token = data.get('access_token')
-                self.refresh_token = data.get('refresh_token')
-                logging.debug(f'成功获取 Access Token ')
-                return
-            
-            loop_count += 1
-            time.sleep(interval)  # 等待一段时间再次请求
+            # 轮询设置
+            try:
+                api_response = api_instance.oauth_token_device_token(code, client_id, client_secret)
+                self._check_exception(api_response)
 
-        if 'error' in data:
-            raise Exception("Error getting token: " + data['error'])
-        else:
-            raise Exception('Error: 请求 Access Token 超时')
+                if 'access_token' in api_client:
+                    self.access_token = api_response.get('access_token')
+                    self.refresh_token = api_response.get('refresh_token')
+                    logging.info(f'成功获取 Access Token ')
+                    return
+                
+            except openapi_client.ApiException as e:
+                if self._check_exception(e) and len(redo)<MAX_REDO:
+                    # 如果可以自己处理
+                    time.sleep(interval)
+                    redo.append(1)
+                    self._ask_device_token(code,client_id,client_secret,interval)
+                else:
+                    # 无法自己处理
+                    raise Exception("Exception when calling AuthApi->oauth_token_device_token: %s\n" % e)
+
+            finally:
+                    redo.clear()
 
 
 
-    def _refresh_token(self):
+    def _refresh_token(self,
+                       refresh_token,
+                       client_id,
+                       client_secret,
+                       redo=[]):
         '''
         Access Token过期后使用refresh_token进行刷新。
         
-        Returns:
-            device_code (str): 第一步中获取的设备码
-            interval (int): 第一步中获取的最小轮询间隔（秒） 
         '''
-        api_url = 'https://openapi.baidu.com/oauth/2.0/token?grant_type=refresh_token&'
-        params = {
-            'refresh_token': self.refresh_token,
-            'client_id': self.app_key,
-            'client_secret': self.secret_key,
-        }
-        headers = {
-        'User-Agent': 'pan.baidu.com'
-        }
+        with openapi_client.ApiClient() as api_client:
+            # Create an instance of the API class
+            api_instance = auth_api.AuthApi(api_client)
+            # 参数设置
+            refresh_token = refresh_token
+            client_id = client_id
+            client_secret = client_secret
 
-        response = requests.get(api_url, params=params, headers=headers)
-        data = response.json()
+            try:
+                api_response = api_instance.oauth_token_refresh_token(refresh_token, client_id, client_secret)
+                # self._check_exception(api_response)
 
-        if 'access_token' in data:
-            self.access_token = data.get('access_token')
-            self.refresh_token = data.get('refresh_token')
-            self._update_key()
-            return
+                self.access_token = api_response.get('access_token')
+                self.refresh_token = api_response.get('refresh_token')
+                self._update_key()
+                return
+
+            except openapi_client.ApiException as e:
+                if self._check_exception(e) and len(redo)<MAX_REDO:
+                    redo.append(1)
+                    self._refresh_token(self,refresh_token, client_id, client_secret)
+
+                else:
+                    raise Exception("Exception when calling AuthApi->oauth_token_refresh_token: %s\n" % e)
             
-        elif 'error' in data:
-            raise Exception("Error getting token: " + data['error_description'])
+            finally:
+                    redo.clear()
+
+
 
 
     def _update_key(self):
@@ -182,3 +226,33 @@ class BaiduAuth:
 
         return self._update_save(section, updates)
     
+
+    def _check_exception(self, api_exception):
+        '''
+        处理Auth api返回的错误
+        
+        Returns:
+            bool: 是否可以自己处理'''
+        match = re.search(r'HTTP response body: (.+)$', api_exception, re.MULTILINE)
+
+        exception_body = json.loads(match.group(1))
+        error = exception_body.get('error')
+        errmsg = exception_body.get('errmsg')
+        request_id = exception_body.get('request_id')
+        
+        try:
+            '''所有可以自己处理的错误都放在这里。'''
+
+            if error == 'expired_token':
+                self._refresh_token
+                return True
+
+            if error=='authorization_pending':
+                return True
+            
+            if error=='slow_down':
+                time.sleep(5)
+                return True
+        
+        except:
+            return False

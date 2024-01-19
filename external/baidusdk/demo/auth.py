@@ -95,8 +95,13 @@ def oauthtoken_devicetoken():
         # example passing only required values which don't have defaults set
         try:
             api_response = api_instance.oauth_token_device_token(code, client_id, client_secret)
-            pprint(api_response)
+            # pprint(api_response)
+            pprint(OauthTokenDeviceTokenResponse(api_response).allowed_values)
+
         except openapi_client.ApiException as e:
+            # e.json()
+            print(type(e))
+            print()
             print("Exception when calling AuthApi->oauth_token_device_token: %s\n" % e)
 
 if __name__ == '__main__':

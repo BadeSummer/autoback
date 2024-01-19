@@ -31,7 +31,7 @@ def check_for_new_files(queue, status_manager, config, last_checked=None, should
             # 获取目录中的所有文件
             files = utils.get_all_files_in_directory(directory)
             logging.info(f"检查目录 {directory} 中的文件")
-            logging.info(f"发现 {len(files)} 个文件")
+            logging.debug(f"总共发现 {len(files)} 个文件")
 
             add_count = 0
 
@@ -44,7 +44,7 @@ def check_for_new_files(queue, status_manager, config, last_checked=None, should
                     last_modified = os.path.getmtime(file)
                     logging.debug(f"{file} 文件的最后修改时间为 {last_modified}")
 
-                    if last_checked is None or last_modified > last_checked:
+                    if not status_manager.is_exsit(file):
                         # 如果不存在状态表里，说明是新增的
                         if status_manager.get_status(file) == 'NOT_EXIST':
                             logging.debug(f"正在添加 {file} 文件")
@@ -60,10 +60,9 @@ def check_for_new_files(queue, status_manager, config, last_checked=None, should
             logging.ERROR(f"Error checking files: {e}")
 
         # 上次检查时间有10分钟冗余，避免在循环过程中产生新的文件导致错过。
-        last_checked = time.time() - 600
         local_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         logging.debug(f"更新最后一次检查时间{ local_time }")
 
         time.sleep(interval * 60)
-        logging.info(f"文件扫描结束，本次新增 {add_count} 个文件进入待上传列表")
+        logging.info(f"本轮扫描结束，本次新增 {add_count} 个文件进入待上传列表")
 

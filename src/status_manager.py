@@ -61,6 +61,13 @@ class StatusManager():
             return self.status.get(file_name, 'NOT_EXIST')
 
 
+    def is_exsit(self, file_name):
+        '''
+        文件是否已经登记
+        '''
+        return file_name in self.status
+    
+
     def add(self, file_name):
         """
         增加文件到状态表
