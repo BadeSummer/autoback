@@ -97,6 +97,7 @@ class BaiduCloudUploader(BaseUploader):
 
         # 获取token
         access_token = self.auth.get_token()
+        logging.debug(f'uploader 向 auth 获取 token:{access_token}')
 
         # 预上传
         logging.debug(f'预上传 {self.file.file_path} ')
@@ -167,7 +168,8 @@ class BaiduCloudUploader(BaseUploader):
             block_list,
             isdir = 0,
             autoinit = 1,
-            rtype = 2
+            rtype = 2,
+            redo=[]
             ):
         '''预上传 api 封装'''
         logging.debug(f'调用预上传api')
@@ -179,17 +181,31 @@ class BaiduCloudUploader(BaseUploader):
             block_list = block_list
             logging.debug(f'预上传参数:\npath:{path}\nisdir:{isdir}\nsize:{size}\nautoinit:{autoinit}\nblock_list:{block_list}')
             try:
+                logging.debug(f'发起uploadid请求')
                 api_response = api_instance.xpanfileprecreate(
                     access_token, path, isdir, size, autoinit, block_list, rtype=rtype)
 
                 # data = json.load(api_response)
                 uploadid = api_response.get('uploadid')
-                logging.debug(f'获取uploadid：{uploadid}')
-
-                if uploadid:
+                logging.debug(f'本次请求得到uploadid:{uploadid}')
+                
+                # 提取api错误代码
+                healling = self._check_response(api_response)
+                if healling and len(redo)<1:
+                    logging.info(f'重新进行预上传{file.file_path}')
+                    self.auth.renew_token()
+                    new_token = self.auth.get_token()
+                    return self._api_precreate(new_token,file,block_list)
+                
+                elif uploadid:
+                    logging.debug(f'获取uploadid：{uploadid}')
                     return uploadid
-                raise Exception(f'无法获取uploadid')
-            
+                
+                else:
+                    print('不知道发生什么进入这里')
+                    print(f'{healling and len(redo)}')
+                    raise Exception(api_response)
+
             except openapi_client.ApiException as e:
                 raise Exception("Exception when calling FileuploadApi->xpanfileprecreate: %s\n" % e)
 
@@ -265,3 +281,36 @@ class BaiduCloudUploader(BaseUploader):
 
             except openapi_client.ApiException as e:
                 print("Exception when calling FileuploadApi->xpanfilecreate: %s\n" % e)
+
+
+    def _check_response(self, api_response):
+        '''
+        处理API 使用错误
+        这个错误一般是 HTTP 200 的，注意于 HTTP 400 的响应错误区分
+
+        '''
+        errno = api_response.get('errno') # is int
+        errmsg = api_response.get('errmsg')
+        requet_id = api_response.get('requet_id')
+
+        logging.debug(f'正在检查上传模块错误码:{errno}')
+        try:
+            '''可以自己处理的部分'''
+
+            if errno in [111,-6]: # token 失效
+                logging.debug(f'错误码为{errno}，需要获取新token')
+                self.auth.renew_token()
+
+            elif False : # 另外一些可修复的情况，这里暂时留空
+                pass
+
+            else: # 无法自修复
+                logging.debug('uploader 无法自我修复')
+                return False
+            
+            logging.debug(f'uploader尝试自我修复')
+            return True
+        
+        except Exception as e:
+            print(e)
+            return False

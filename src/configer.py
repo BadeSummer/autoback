@@ -15,21 +15,21 @@ class Config:
         section = 'LocalFiles'
         with self.lock:
             return {
-                'device_name': self.config.get(section, 'DeviceName', fallback='DefaultDevice'),
-                'local_directory': self.config.get(section, 'LocalDirectory', fallback='/default/path'),
-                'check_interval': self.config.getint(section, 'CheckInterval', fallback=30)
+                'device_name': self.config.get(section, 'devicename', fallback='DefaultDevice'),
+                'local_directory': self.config.get(section, 'localdirectory', fallback='/default/path'),
+                'check_interval': self.config.getint(section, 'checkinterval', fallback=30)
             }
 
     def get_baidu_config(self):
         section = 'BaiduCloud'
         with self.lock:
             return {
-                'app_name': self.config.get(section, 'AppName', fallback=''),
-                'app_id': self.config.get(section, 'AppID', fallback=''),
-                'app_key': self.config.get(section, 'AppKey', fallback=''),
-                'secret_key': self.config.get(section, 'SecretKey', fallback=''),
-                'access_token': self.config.get(section, 'AccessToken', fallback=''),
-                'refresh_token': self.config.get(section, 'RefreshToken', fallback=''),
+                'app_name': self.config.get(section, 'appname', fallback=''),
+                'app_id': self.config.get(section, 'appid', fallback=''),
+                'app_key': self.config.get(section, 'appkey', fallback=''),
+                'secret_key': self.config.get(section, 'secretkey', fallback=''),
+                'access_token': self.config.get(section, 'accesstoken', fallback=''),
+                'refresh_token': self.config.get(section, 'refreshtoken', fallback=''),
             }
     
     def update_save(self, section, updates):
