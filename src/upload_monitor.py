@@ -5,7 +5,7 @@ from threading import Thread
 from queue import Empty
 
 import logging
-from utils import MAIN_LOG
+from utils import MAIN_LOG, shutdown_event
 mainlog = logging.getLogger(MAIN_LOG)
 
 
@@ -43,7 +43,7 @@ class UploadMonitor:
     def _upload_files(self):
         
         mainlog.info(f'开始监控上传任务')
-        while not self._stop_monitoring:
+        while not shutdown_event.is_set():
             try:
                 # 尝试从队列中获取任务，最多等待一定时间
                 mainlog.debug(f'从队列中提取任务')

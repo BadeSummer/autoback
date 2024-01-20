@@ -3,9 +3,13 @@ BAIDU_CONFIG_SECTION = 'BaiduCloud'
 MAIN_LOG = 'main_log'
 import os
 import hashlib
+
 import logging
 from utils import MAIN_LOG
 mainlog = logging.getLogger(MAIN_LOG)
+
+import threading
+shutdown_event = threading.Event()
 
 
 def get_all_files_in_directory(directory):
@@ -201,3 +205,7 @@ def logging_with_terminal_and_file():
     # 现在可以开始记录日志
     # logger.info("这条信息会出现在控制台和文件中")
     # logger.debug("这条信息只会出现在文件中")
+
+def set_shutdown():
+    """ 设置关闭事件 """
+    shutdown_event.set()
