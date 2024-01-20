@@ -3,7 +3,10 @@ sys.path.append('src')
 from file_uploader import *
 from threading import Thread
 from queue import Empty
+
 import logging
+from utils import MAIN_LOG
+mainlog = logging.getLogger(MAIN_LOG)
 
 
 class UploadMonitor:
@@ -39,13 +42,13 @@ class UploadMonitor:
 
     def _upload_files(self):
         
-        logging.info(f'开始监控上传任务')
+        mainlog.info(f'开始监控上传任务')
         while not self._stop_monitoring:
             try:
                 # 尝试从队列中获取任务，最多等待一定时间
-                logging.debug(f'从队列中提取任务')
+                mainlog.debug(f'从队列中提取任务')
                 task = self.file_queue.get(timeout=5)
-                logging.debug(f'提取完毕')
+                mainlog.debug(f'提取完毕')
 
                 # 检查是否是特殊的停止信号（放在队列里面的None信号）
                 if task is None:
@@ -54,11 +57,11 @@ class UploadMonitor:
 
                 # 处理上传任务
                 # 设置正在上传状态
-                logging.debug(f'设置任务状态为正在上传')
+                mainlog.debug(f'设置任务状态为正在上传')
                 self.status_manager.set_uploading(task)
 
                 # 创建上传器
-                logging.debug(f'创建上传器')
+                mainlog.debug(f'创建上传器')
                 self.uploader = BaiduCloudUploader(task, self.config)
 
                 # 开始上传
@@ -75,7 +78,7 @@ class UploadMonitor:
             except Empty:
                 # 队列空闲，继续检查停止条件
                 '''相当于空闲时60秒检测一次是否有停止监控的信号'''
-                logging.debug('上传队列空闲中...')
+                mainlog.debug('上传队列空闲中...')
                 continue
 
         return "Upload stoped"

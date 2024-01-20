@@ -8,26 +8,27 @@ import file_checker,file_uploader
 import storage_auth
 from upload_monitor import UploadMonitor
 import logging
+from utils import logging_with_terminal_and_file
 
 def main():
     # logging
     # logging.basicConfig(level=logging.INFO, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.basicConfig(level=logging.DEBUG, filename='run.log', format='%(asctime)s - %(levelname)s - %(message)s')
+    mainlog = logging_with_terminal_and_file()
 
     # config
-    logging.info(f'加载配置文件')
+    mainlog.info(f'加载配置文件')
     config = configer.Config()
 
     # Global upload task queue.
-    logging.info(f'初始化文件上传队列')
+    mainlog.info(f'初始化文件上传队列')
     file_queue = Queue()
 
     # Global status manager
-    logging.info(f'初始化状态控制器')
+    mainlog.info(f'初始化状态控制器')
     s_manager = status_manager.StatusManager(file_queue)
 
     # 传递状态控制器到文件检测和文件上传模块
-    logging.info(f'启动文件检测线程')
+    mainlog.info(f'启动文件检测线程')
     file_check_thread = Thread(target=file_checker.check_for_new_files, args=(file_queue, s_manager, config))
     file_check_thread.start()
 
@@ -35,7 +36,7 @@ def main():
     upload_monitor = UploadMonitor(file_queue, s_manager, config)
 
     # 开始上传
-    logging.info(f'启动文件上传线程')
+    mainlog.info(f'启动文件上传线程')
     upload_monitor.start_monitor()
 
     upload_monitor.upload_monitor_thread.join()

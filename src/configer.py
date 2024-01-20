@@ -1,7 +1,8 @@
 import configparser
 import threading
 import logging
-
+from utils import MAIN_LOG
+mainlog = logging.getLogger(MAIN_LOG)
 
 class Config:
     def __init__(self, filename='config.ini'):
@@ -48,13 +49,13 @@ class Config:
             # 遍历字典并更新配置值
             for key, value in updates.items():
                 self.config.set(section, key, value)
-                logging.debug(f'正在更新 { key } : { value }')
+                mainlog.debug(f'正在更新 { key } : { value }')
             # 将更改一次性写回文件
             with open(self.filename, 'w') as configfile:
-                logging.debug(f'正在写入配置文件')
+                mainlog.debug(f'正在写入配置文件')
                 self.config.write(configfile)
             
-            logging.info(f"已更新配置文件 {section} 部分")
+            mainlog.info(f"已更新配置文件 {section} 部分")
 
 
     def reload(self):

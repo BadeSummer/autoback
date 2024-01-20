@@ -12,7 +12,7 @@ sys.path.append(external_path)
 from abc import ABC, abstractmethod
 from storage_auth import BaiduAuth
 
-from utils import File, FilePreprocessor
+from utils import File, FilePreprocessor, MAIN_LOG
 
 # 百度网盘SDK
 from openapi_client.api import fileupload_api
@@ -22,6 +22,7 @@ import json
 import concurrent.futures
 import threading
 import logging
+mainlog = logging.getLogger(MAIN_LOG)
 
 class BaseUploader(ABC):
     '''
@@ -88,23 +89,23 @@ class BaiduCloudUploader(BaseUploader):
         total_chunks = len(self.file.chunks)
         lock = threading.Lock()
 
-        logging.info(f'正在上传{self.file.file_path}')
+        mainlog.info(f'正在上传{self.file.file_path}')
         
         # 预处理
-        logging.debug(f'预处理 {self.file.file_path} ')
+        mainlog.debug(f'预处理 {self.file.file_path} ')
         file_preprocessor = FilePreprocessor(self.file)
         file_preprocessor.preprocess()
 
         # 获取token
         access_token = self.auth.get_token()
-        logging.debug(f'uploader 向 auth 获取 token:{access_token}')
+        mainlog.debug(f'uploader 向 auth 获取 token:{access_token}')
 
         # 预上传
-        logging.debug(f'预上传 {self.file.file_path} ')
+        mainlog.debug(f'预上传 {self.file.file_path} ')
         uploadid = self._api_precreate(access_token, self.file, self.file.block_list)
         
         # 并发上传分片 (用线程池实现，最大线程为5，暂时不可通过配置文件调节)
-        logging.debug(f'分片上传 {self.file.file_path} ')
+        mainlog.debug(f'分片上传 {self.file.file_path} ')
         retries = 20  # 所有分片共享重试次数
         try:
             with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
@@ -141,7 +142,7 @@ class BaiduCloudUploader(BaseUploader):
         # 创建文件
         if self._api_creatfile(access_token, self.file, self.file.block_list, uploadid): 
             # 上传成功
-            logging.info(f"成功上传 { self.file.file_path }")
+            mainlog.info(f"成功上传 { self.file.file_path }")
             return True
         return False
 
@@ -172,33 +173,33 @@ class BaiduCloudUploader(BaseUploader):
             redo=[]
             ):
         '''预上传 api 封装'''
-        logging.debug(f'调用预上传api')
+        mainlog.debug(f'调用预上传api')
 
         with openapi_client.ApiClient() as api_client:
             api_instance = fileupload_api.FileuploadApi(api_client)
             path = self.upload_path
             size = file.file_size
             block_list = block_list
-            logging.debug(f'预上传参数:\npath:{path}\nisdir:{isdir}\nsize:{size}\nautoinit:{autoinit}\nblock_list:{block_list}')
+            mainlog.debug(f'预上传参数:\npath:{path}\nisdir:{isdir}\nsize:{size}\nautoinit:{autoinit}\nblock_list:{block_list}')
             try:
-                logging.debug(f'发起uploadid请求')
+                mainlog.debug(f'发起uploadid请求')
                 api_response = api_instance.xpanfileprecreate(
                     access_token, path, isdir, size, autoinit, block_list, rtype=rtype)
 
                 # data = json.load(api_response)
                 uploadid = api_response.get('uploadid')
-                logging.debug(f'本次请求得到uploadid:{uploadid}')
+                mainlog.debug(f'本次请求得到uploadid:{uploadid}')
                 
                 # 提取api错误代码
                 healling = self._check_response(api_response)
                 if healling and len(redo)<1:
-                    logging.info(f'重新进行预上传{file.file_path}')
+                    mainlog.info(f'重新进行预上传{file.file_path}')
                     self.auth.renew_token()
                     new_token = self.auth.get_token()
                     return self._api_precreate(new_token,file,block_list)
                 
                 elif uploadid:
-                    logging.debug(f'获取uploadid：{uploadid}')
+                    mainlog.debug(f'获取uploadid：{uploadid}')
                     return uploadid
                 
                 else:
@@ -217,7 +218,7 @@ class BaiduCloudUploader(BaseUploader):
             uploadid,
             ):
         '''分片上传 api 封装'''
-        logging.debug(f'调用分片上传api')
+        mainlog.debug(f'调用分片上传api')
         
         with openapi_client.ApiClient() as api_client:
             api_instance = fileupload_api.FileuploadApi(api_client)
@@ -253,7 +254,7 @@ class BaiduCloudUploader(BaseUploader):
             rtype=2
             ):
         '''创建文件 api 封装'''
-        logging.debug(f'调用创建文件api')
+        mainlog.debug(f'调用创建文件api')
 
         with openapi_client.ApiClient() as api_client:
             # Create an instance of the API class
@@ -274,8 +275,8 @@ class BaiduCloudUploader(BaseUploader):
                 if errno:
                     raise f'创建{ file.file_path }文件失败 错误码:{errno}'
 
-                # logging.debug(f'文件上传对比：path:{re_path==path}  size:{file.file_size==size}  md5:{file.file_md5==md5}')
-                # logging.debug(f'\n本地文件{file.file_path}md5：{file.file_md5}\nAPI返回{re_path}md5：{md5}')
+                # mainlog.debug(f'文件上传对比：path:{re_path==path}  size:{file.file_size==size}  md5:{file.file_md5==md5}')
+                # mainlog.debug(f'\n本地文件{file.file_path}md5：{file.file_md5}\nAPI返回{re_path}md5：{md5}')
                 # if re_path==path and file.file_size==size and file.file_md5==md5:
                 return True
 
@@ -293,22 +294,22 @@ class BaiduCloudUploader(BaseUploader):
         errmsg = api_response.get('errmsg')
         requet_id = api_response.get('requet_id')
 
-        logging.debug(f'正在检查上传模块错误码:{errno}')
+        mainlog.debug(f'正在检查上传模块错误码:{errno}')
         try:
             '''可以自己处理的部分'''
 
             if errno in [111,-6]: # token 失效
-                logging.debug(f'错误码为{errno}，需要获取新token')
+                mainlog.debug(f'错误码为{errno}，需要获取新token')
                 self.auth.renew_token()
 
             elif False : # 另外一些可修复的情况，这里暂时留空
                 pass
 
             else: # 无法自修复
-                logging.debug('uploader 无法自我修复')
+                mainlog.debug('uploader 无法自我修复')
                 return False
             
-            logging.debug(f'uploader尝试自我修复')
+            mainlog.debug(f'uploader尝试自我修复')
             return True
         
         except Exception as e:

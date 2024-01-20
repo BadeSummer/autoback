@@ -1,9 +1,11 @@
 LOCAL_CONFIG_SECTION = 'LocalFiles'
 BAIDU_CONFIG_SECTION = 'BaiduCloud'
-
+MAIN_LOG = 'main_log'
 import os
 import hashlib
 import logging
+from utils import MAIN_LOG
+mainlog = logging.getLogger(MAIN_LOG)
 
 
 def get_all_files_in_directory(directory):
@@ -72,10 +74,10 @@ class File:
         return ischunk, chunk_amount
     
     def make_block_list(self):
-        logging.debug(f'构建 block_list')
+        mainlog.debug(f'构建 block_list')
 
         if not self.chunks :
-            logging.debug('切片列表为空')
+            mainlog.debug('切片列表为空')
             raise Exception(f'还未进行预处理')
         self.block_list = []
         for chunk in self.chunks:
@@ -87,7 +89,7 @@ class File:
         '''删除本地的chunks文件'''
         for chunk in self.chunks:
             os.remove(chunk.chunk_path)
-            logging.debug(f'清理缓存{chunk.chunk_path}')
+            mainlog.debug(f'清理缓存{chunk.chunk_path}')
 
     
 class FileChunk:
@@ -135,7 +137,7 @@ class FilePreprocessor:
         self.max_chunk_amount = max_chunk_amount
 
     def preprocess(self):
-        logging.debug(f'文件预处理')
+        mainlog.debug(f'文件预处理')
 
         # 确保文件路径中的目录存在
         os.makedirs(os.path.dirname(self.file.file_path), exist_ok=True)
@@ -151,23 +153,51 @@ class FilePreprocessor:
 
     def _chunk_file(self):
         # 创建文件切片
-        logging.debug(f'切片文件')
+        mainlog.debug(f'切片文件')
         with open(self.file.file_path, 'rb') as f:
-            logging.debug(f'读取文件 {self.file.file_path} 准备切片')
+            mainlog.debug(f'读取文件 {self.file.file_path} 准备切片')
             part_seq = 0
 
             while True:
                 chunk = f.read(self.chunk_size)
                 if not chunk:
-                    logging.debug(f'切片列表中含有{len(self.file.chunks)}个切片')
+                    mainlog.debug(f'切片列表中含有{len(self.file.chunks)}个切片')
 
                     return '切片完成'
 
                 chunk_path = f"{ self.file.file_path }_path_chunk_{ part_seq }"
                 with open(chunk_path, 'wb') as cf:
-                    logging.debug(f'创建第{part_seq}个切片')
+                    mainlog.debug(f'创建第{part_seq}个切片')
                     cf.write(chunk)
-                logging.debug(f'加入第{part_seq}个切片到 chunks')    
+                mainlog.debug(f'加入第{part_seq}个切片到 chunks')    
                 self.file.chunks.append(FileChunk(chunk_path, self.file, part_seq))
 
                 part_seq += 1
+
+def logging_with_terminal_and_file():
+    '''默认为终端输出info，文件存储debug'''
+
+    # 创建一个日志记录器，并设置它的日志级别为DEBUG
+    logger = logging.getLogger(MAIN_LOG)
+    logger.setLevel(logging.DEBUG)
+
+    # 创建一个输出到控制台的Handler，并设置级别为INFO
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(console_format)
+
+    # 创建一个输出到文件的Handler，并设置级别为DEBUG
+    file_handler = logging.FileHandler('run.log')
+    file_handler.setLevel(logging.DEBUG)
+    file_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_format)
+
+    # 将两个Handler添加到我们的Logger对象中
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger
+    # 现在可以开始记录日志
+    # logger.info("这条信息会出现在控制台和文件中")
+    # logger.debug("这条信息只会出现在文件中")

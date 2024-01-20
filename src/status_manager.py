@@ -1,11 +1,13 @@
 STATUS_NOT_UPLOADED = '未上传'
 STATUS_UPLOADED = '已上传'
 STATUS_UPLOADING = '正在上传'
+from utils import MAIN_LOG
 
 import json
 import os
 import threading
 import logging
+mainlog = logging.getLogger(MAIN_LOG)
 
 class StatusManager():
     """
@@ -35,14 +37,14 @@ class StatusManager():
         Args:
             filename (str): 状态文件的名称。默认为 'upload_status.json'。
         """
-        logging.debug(f'正在初始化状态控制器')
+        mainlog.debug(f'正在初始化状态控制器')
         self.lock = threading.Lock()
         self.filename = filename
         self.queue = queue
         self.status = self._load_status()
         
         # 初始化加载状态后同步到任务队列
-        logging.debug(f'同步未上传状态到队列中')
+        mainlog.debug(f'同步未上传状态到队列中')
         self._sync_queue()
 
 
