@@ -238,8 +238,8 @@ def test_get_local_config_with_normal(temp_config_file_of_normal_options):
 def test_update_and_save_normal_options(temp_config_file_of_normal_options):
     config = Config(temp_config_file_of_normal_options)
     update_options = {
-        'accesstoken' : 'update_token',
-        'refreshtoken' : 'update_refresh'
+        'accesstoken': 'update_token',
+        'refreshtoken': 'update_refresh'
     }
     section = 'BaiduCloud'
     config.update_save(section, update_options)
@@ -251,14 +251,14 @@ def test_update_and_save_normal_options(temp_config_file_of_normal_options):
     baiduconfig1 = config.get_baidu_config()
     baiduconfig2 = config2.get_baidu_config()
 
-    assert localconfig1==localconfig2
-    assert baiduconfig1['app_name']==baiduconfig2['app_name']
-    assert baiduconfig1['app_id']==baiduconfig2['app_id']
-    assert baiduconfig1['app_key']==baiduconfig2['app_key']
-    assert baiduconfig1['secret_key']==baiduconfig2['secret_key']
+    assert localconfig1 == localconfig2
+    assert baiduconfig1['app_name'] == baiduconfig2['app_name']
+    assert baiduconfig1['app_id'] == baiduconfig2['app_id']
+    assert baiduconfig1['app_key'] == baiduconfig2['app_key']
+    assert baiduconfig1['secret_key'] == baiduconfig2['secret_key']
 
-    assert baiduconfig2['access_token']=='update_token'
-    assert baiduconfig2['refresh_token']=='update_refresh'
+    assert baiduconfig2['access_token'] == 'update_token'
+    assert baiduconfig2['refresh_token'] == 'update_refresh'
 
 def test_update_and_save_no_exist_options():
     try:
