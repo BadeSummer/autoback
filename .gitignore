@@ -1,4 +1,7 @@
 测试运行/
 **/.DS_Store
+**/__pycache__
 config.ini
 upload_status.json
+run.log
+.pytest_cache
