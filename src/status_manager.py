@@ -202,7 +202,7 @@ class StatusManager():
             dict: 包含文件状态的字典。
         """
         if os.path.exists(self.filename):
-            with open(self.filename, 'r') as file:
+            with open(self.filename, 'r', encoding='utf-8') as file:
                 return json.load(file)
         else:
             return {}

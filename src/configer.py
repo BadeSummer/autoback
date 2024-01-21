@@ -15,7 +15,7 @@ class Config:
             f.close()
         except FileNotFoundError:
             example = '''[LocalFiles]\n# 设备名称\ndevicename = 设备名称\n# 本地检测新文件目录\nlocaldirectory = 本地检测目录\n# 检测时间间隔 单位（分钟）\ncheckinterval = 30\n\n[BaiduCloud]\n# 本程序的百度应用\nappname = 摄影素材自动备份\nappid = 47097507\nappkey = H794OU88Q5KXH89ahoPGVCFNMxVBb1Sb\nsecretkey = pWjzs8MIBw2fxutAXsxVpN0Pxa0OqRT6\nsignkey = X3JHR8D=5g0!EP%RF1FzGDrMQFPQkn1V\n\n# 用户百度授权token，有的话可以输入，无可留空\naccesstoken = \nrefreshtoken = '''
-            with open(filename, "w") as f:
+            with open(filename, "w", encoding='utf-8') as f:
                 f.write(example)
             mainlog.critical(f'配置文件不存在，已创建模版{filename}')
             raise FileNotFoundError(f'配置文件不存在，已创建模版{filename}')
@@ -67,7 +67,7 @@ class Config:
                 self.config.set(section, key, value)
                 mainlog.debug(f'正在更新 { key } : { value }')
             # 将更改一次性写回文件
-            with open(self.filename, 'w') as configfile:
+            with open(self.filename, 'w', encoding='utf-8') as configfile:
                 mainlog.debug(f'正在写入配置文件')
                 self.config.write(configfile)
             

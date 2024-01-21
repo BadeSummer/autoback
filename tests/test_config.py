@@ -10,7 +10,7 @@ import pytest
 def temp_config_file_of_normal_options(tmp_path):
     '''正常的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = testdevice
@@ -32,7 +32,7 @@ def temp_config_file_of_normal_options(tmp_path):
 def temp_config_file_of_missing_required_options(tmp_path):
     '''缺少必要参数的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = 
@@ -55,7 +55,7 @@ def temp_config_file_of_missing_required_options(tmp_path):
 def temp_config_file_of_missing_optional_options(tmp_path):
     '''缺少可选参数的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = testdevice
@@ -78,7 +78,7 @@ def temp_config_file_of_missing_optional_options(tmp_path):
 def temp_config_file_of_more_useless_options(tmp_path):
     '''多了无用参数的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = testdevice
@@ -107,7 +107,7 @@ def temp_config_file_of_more_useless_options(tmp_path):
 def temp_config_file_of_more_useful_options(tmp_path):
     '''多了有用参数的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = testdevice
@@ -131,7 +131,7 @@ def temp_config_file_of_more_useful_options(tmp_path):
 def temp_config_file_of_mess_up_options(tmp_path):
     '''正常的配置文件'''
     temp_file = tmp_path / "temp_config.ini"
-    with open(temp_file, "w") as file:
+    with open(temp_file, "w", encoding='utf-8') as file:
         file.write('''
             [LocalFiles]
             devicename = testdevice
