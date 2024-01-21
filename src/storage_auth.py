@@ -41,26 +41,10 @@ class BaiduAuth:
         self.sign_key = baidu_cloud_config.get('sign_key')
         self.access_token = baidu_cloud_config.get('access_token')
         self.refresh_token = baidu_cloud_config.get('refresh_token')
+        self.auth_moded = baidu_cloud_config.get('auth_mode')
+
         self.auth_lock = Lock()
-
-
-    def auth_error_check(self, error_code):
-        '''
-        api调用的时候，token相关的错误处理
-        
-        Args:
-            response (object) : 错误代码
-        '''
-        with self.auth_lock:
-            if error_code:
-                if error_code == 110: # token不合法，重新获取token
-                    self._auth_flow()
-                    return self.access_token
-                
-                if error_code == 111: # token已过期，刷新
-                    self._refresh_token()
-                    return self.access_token
-            
+       
 
     def get_token(self):
         '''给出一个token'''
@@ -98,7 +82,7 @@ class BaiduAuth:
         获取token的完整流程。
         '''
         mainlog.debug(f'执行_auth_flow')
-        
+    
         # 获取设备码
         device_code, qrcode_url, interval = self._get_device_code(self.app_key)
 
