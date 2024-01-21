@@ -21,7 +21,7 @@ class Config:
             raise FileNotFoundError(f'配置文件不存在，已创建模版{filename}')
 
         mainlog.debug(f'尝试读取配置{filename}')
-        self.config.read(self.filename)
+        self.config.read(self.filename, encoding='utf-8')
         self._check_config_required()
 
         self.lock = threading.Lock()
