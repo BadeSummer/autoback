@@ -122,7 +122,7 @@ class BaiduCloudUploader(BaseUploader):
 
                         elif retries > 0:
                             # 重试逻辑
-                            print(f"Retrying {chunk}...")
+                            print(f"Retrying {chunk.mother_file.file_path} part {chunk.index}...")
                             executor.submit(self._api_chunk_upload, access_token, chunk, uploadid)
                             retries -= 1
 
