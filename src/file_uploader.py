@@ -85,9 +85,6 @@ class BaiduCloudUploader(BaseUploader):
         baidu_path_prefix = f'/apps/{app_name}/{device_name}'
         self.upload_path = f'{baidu_path_prefix}/{self.file.file_path}'
 
-        completed_chunks = 0
-        total_chunks = len(self.file.chunks)
-        lock = threading.Lock()
 
         mainlog.info(f'正在上传{self.file.file_path}')
         
@@ -95,6 +92,11 @@ class BaiduCloudUploader(BaseUploader):
         mainlog.debug(f'预处理 {self.file.file_path} ')
         file_preprocessor = FilePreprocessor(self.file)
         file_preprocessor.preprocess()
+
+        # 计算进度
+        completed_chunks = 0
+        total_chunks = len(self.file.chunks)
+        lock = threading.Lock()
 
         # 获取token
         access_token = self.auth.get_token()
@@ -238,7 +240,7 @@ class BaiduCloudUploader(BaseUploader):
                 
                 # data = json.load(api_response)
                 if api_response.get('md5') == chunk.chunk_md5:
-                    return 0
+                    return True
                 
             except openapi_client.ApiException as e:
                 print("Exception when calling FileuploadApi->pcssuperfile2: %s\n" % e)
