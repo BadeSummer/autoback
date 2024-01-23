@@ -72,6 +72,8 @@ class UploadMonitor:
                     self.status_manager.set_uploaded(task)
                 else:
                     self.status_manager.set_not_uploaded(task)
+                    self.file_queue.put(task)
+                    mainlog.debug(f'上传{task}失败，重新插入上传任务队列。')
 
                 self.file_queue.task_done()
 

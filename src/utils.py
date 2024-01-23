@@ -192,7 +192,7 @@ def logging_with_terminal_and_file():
     console_handler.setFormatter(console_format)
 
     # 创建一个输出到文件的Handler，并设置级别为DEBUG
-    file_handler = logging.FileHandler('run.log')
+    file_handler = logging.FileHandler('run.log', encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
     file_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_format)

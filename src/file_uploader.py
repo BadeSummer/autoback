@@ -82,8 +82,8 @@ class BaiduCloudUploader(BaseUploader):
         device_name = self.config.get_local_config().get('device_name')
         logging.debug(f'应用名称：{app_name}    望远镜设备名称：{device_name}')
 
-        baidu_path_prefix = os.path.join('/apps', app_name, device_name)
-        self.upload_path = os.path.join(baidu_path_prefix, self.file.file_path)
+        baidu_path_prefix = f'/apps/{app_name}/{device_name}'
+        self.upload_path = f'{baidu_path_prefix}/{self.file.file_path}'
 
         completed_chunks = 0
         total_chunks = len(self.file.chunks)
@@ -122,7 +122,7 @@ class BaiduCloudUploader(BaseUploader):
 
                         elif retries > 0:
                             # 重试逻辑
-                            print(f"Retrying {chunk.mother_file.file_path} part {chunk.index}...")
+                            mainlog.debug(f"Retrying {chunk.mother_file.file_path} part {chunk.chunk_index}...")
                             executor.submit(self._api_chunk_upload, access_token, chunk, uploadid)
                             retries -= 1
 
@@ -130,11 +130,11 @@ class BaiduCloudUploader(BaseUploader):
                             raise Exception(f'{ retries }次重试后，分片上传失败')
 
                     except Exception as e:
-                        print(f"Error with {chunk.chunk_path}: {e}")
+                        mainlog.debug(f"Error with {chunk.chunk_path}: {e}")
                         return False
                     
                     if not self.uploading:
-                        print(f"本次上传被停止")
+                        mainlog.debug(f"本次上传被停止")
                         return False
         finally:
             self.file.remove_chunks()
@@ -297,8 +297,11 @@ class BaiduCloudUploader(BaseUploader):
         mainlog.debug(f'正在检查上传模块错误码:{errno}')
         try:
             '''可以自己处理的部分'''
-
-            if errno in [111,-6]: # token 失效
+            if errno == 0:
+                mainlog.debug(f'错误码为{errno}，api响应正常')
+                return False
+            
+            elif errno in [111,-6]: # token 失效
                 mainlog.debug(f'错误码为{errno}，需要获取新token')
                 self.auth.renew_token()
 
