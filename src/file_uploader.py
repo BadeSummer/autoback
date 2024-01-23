@@ -82,8 +82,10 @@ class BaiduCloudUploader(BaseUploader):
         device_name = self.config.get_local_config().get('device_name')
         logging.debug(f'应用名称：{app_name}    望远镜设备名称：{device_name}')
 
-        baidu_path_prefix = f'/apps/{app_name}/{device_name}'
-        self.upload_path = f'{baidu_path_prefix}/{self.file.file_path}'
+        baidu_path_prefix = f'/apps/{app_name}'
+        local_file_path = self.config.get_local_config().get('local_directory')
+        file_upload_path = os.path.relpath(self.file.file_path, local_file_path)
+        self.upload_path = f'{baidu_path_prefix}/{file_upload_path}'
 
 
         mainlog.info(f'正在上传{self.file.file_path}')
